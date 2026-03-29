@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 互動講義 V16.1 (超級裝甲版)</title>
+    <style>
+        :root {
+            --primary: #2c3e50; --accent: #3498db; --success: #27ae60;
+            --bg: #ecf0f1; --card-bg: #ffffff; --text: #34495e;
+            --highlight: #fff3cd; --word-hover: #e74c3c;
+        }
+
+        body {
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg); color: var(--text);
+            margin: 0; padding: 0; line-height: 1.6;
+        }
+
+        nav {
+            background: var(--primary); color: white; padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-size: 1.2rem; font-weight: bold; }
+        .nav-btns { display: flex; gap: 10px; }
+        .mode-switch {
+            background: var(--accent); border: none; color: white;
+            padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: bold;
+        }
+        .btn-emergency { background: #e74c3c; }
+
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; padding-bottom: 100px; }
+
+        /* 老師備課區 */
+        #teacher-zone { display: none; }
+        .editor-card {
+            background: white; padding: 25px; border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+        h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        textarea {
+            width: 100%; height: 350px; padding: 15px;
+            border: 2px solid #bdc3c7; border-radius: 8px;
+            margin-bottom: 15px; font-size: 1rem; font-family: monospace;
+            resize: vertical;
+        }
+        textarea:focus { border-color: var(--accent); outline: none; }
+
+        .btn-save { background: #e67e22; width: 100%; font-size: 1.2rem; padding: 12px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .btn-save:active { transform: scale(0.98); }
+
+        /* 學生學習區 */
+        #student-zone { display: block; }
+        
+        .student-toolbar {
+            display: flex; justify-content: flex-end; margin-bottom: 15px; gap: 10px;
+        }
+        .btn-tool {
+            color: white; border: none; padding: 8px 18px; 
+            border-radius: 20px; cursor: pointer; font-size: 0.95rem; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.2s;
+        }
+        .btn-tool:hover { transform: translateY(-2px); }
+        .btn-export { background: #8e44ad; }
+        .btn-fullscreen { background: #27ae60; }
+
+        .lesson-card {
+            background: var(--card-bg); border-radius: 12px;
+            margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden; border: 1px solid #eee;
+        }
+        
+        .text-section {
+            padding: 25px; cursor: pointer; transition: background 0.2s;
+            border-bottom: 1px dashed #eee; position: relative;
+        }
+        .text-section:hover { background-color: #f7f9f9; }
+        .text-section.playing { background-color: #fff9c4; border-left: 6px solid #f1c40f; }
+        
+        .play-icon { position: absolute; right: 20px; top: 20px; font-size: 1.5rem; opacity: 0.3; }
+        .english-text { font-size: 1.4rem; font-weight: 500; color: #2c3e50; margin-bottom: 10px; padding-right: 30px; line-height: 1.6; }
+        .chinese-trans { font-size: 1.1rem; color: #7f8c8d; line-height: 1.5; }
+
+        .word-in-text {
+            display: inline-block; border-radius: 4px; padding: 0 2px;
+            transition: all 0.1s; cursor: pointer; border-bottom: 1px dotted transparent;
+        }
+        .word-in-text:hover { color: var(--word-hover); background: #fae5e5; border-bottom: 1px dotted var(--word-hover); }
+
+        .analysis-section {
+            background: #fafafa; padding: 20px; font-size: 1rem; border-top: 1px solid #eee;
+        }
+        .analysis-content ul { padding-left: 20px; margin: 5px 0; }
+        .analysis-content li { margin-bottom: 8px; }
+        .analysis-content b { color: #e67e22; }
+        
+        .vocab-section { background: #fff; padding: 15px 20px; border-top: 1px dashed #ccc; }
+        .section-label { font-size: 0.85rem; color: #95a5a6; font-weight: bold; margin-bottom: 10px; display: block; }
+        .vocab-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .vocab-chip { 
+            background: #ecf0f1; color: #2c3e50; padding: 5px 12px; border-radius: 20px; 
+            font-size: 0.95rem; cursor: pointer; border: 1px solid #bdc3c7; transition: all 0.2s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .vocab-chip:hover { background: #3498db; color: white; border-color: #3498db; transform: translateY(-2px); }
+
+        .voice-controls {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: white; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex; justify-content: center; gap: 10px; z-index: 100;
+        }
+        select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; max-width: 200px; outline: none; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;
+        }
+        .modal-card {
+            background: white; width: 90%; max-width: 450px; padding: 25px;
+            border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative; text-align: center;
+        }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
+        .modal-word { font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        .modal-meaning { font-size: 1.5rem; color: #e67e22; font-weight: bold; margin-bottom: 15px; }
+        .modal-example { 
+            background: #f0f3f4; padding: 15px; border-radius: 10px; 
+            text-align: left; font-size: 1.1rem; color: #555; margin-bottom: 20px; line-height: 1.5;
+        }
+        .modal-example b { color: var(--primary); }
+
+        /* Toast */
+        #word-toast {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(44, 62, 80, 0.95); color: white;
+            padding: 12px 25px; border-radius: 30px;
+            font-size: 1.1rem; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 2500; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+            text-align: center; max-width: 90%; white-space: normal;
+        }
+        #word-toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+        #word-toast strong { color: #f1c40f; display: block; font-size: 1.3em; margin-bottom: 5px; }
+
+        @media print {
+            body { background-color: white; color: black; }
+            nav, .student-toolbar, .voice-controls, .play-icon, .section-label, .modal-overlay, #word-toast {
+                display: none !important;
+            }
+            .container { max-width: 100%; margin: 0; padding: 0; }
+            .lesson-card { 
+                border: 1px solid #ccc; box-shadow: none; margin-bottom: 30px; 
+                page-break-inside: avoid; border-radius: 0;
+            }
+            .text-section, .analysis-section, .vocab-section { padding: 15px; }
+            .analysis-section { background-color: #fcfcfc; }
+            .vocab-chip { background: transparent; border: 1px solid #aaa; color: black; }
+            .word-in-text { border-bottom: none; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="logo">📚 Smart Lesson V16.1</div>
+    <div class="nav-btns">
+        <button class="mode-switch btn-emergency" onclick="resetAll()">🚑 緊急重置</button>
+        <button class="mode-switch" onclick="safeToggleMode()">切換: 備課 / 上課</button>
+    </div>
+</nav>
+
+<div class="container">
+    <div id="teacher-zone">
+        <div class="editor-card">
+            <h3>📥 貼上 AI 回傳的教學資料 (JSON)</h3>
+            <p style="font-size:0.9rem; color:#666;">請將 ChatGPT 產生的 JSON 格式資料直接貼在下方框框內：</p>
+            <textarea id="json-input" placeholder='請貼上 [ { ... } ] 格式的資料'></textarea>
+            <button class="btn-save" onclick="saveAndRender()">💾 儲存並開始上課</button>
+        </div>
+    </div>
+
+    <div id="student-zone">
+        <div class="student-toolbar" id="toolbar" style="display:none;">
+            <button class="btn-tool btn-fullscreen" onclick="toggleFullScreen()">🖥️ 全螢幕</button>
+            <button class="btn-tool btn-export" onclick="exportToPDF()">🖨️ 匯出 PDF</button>
+        </div>
+        <div id="lesson-container">
+            <div style="text-align:center; padding: 50px; color:#999;">
+                系統載入中... 若無畫面，請點擊右上方切換至「備課模式」。
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="vocab-modal" onclick="closeModal(event)">
+    <div class="modal-card">
+        <span class="close-modal" onclick="closeModal(event)">×</span>
+        <div class="modal-word" id="m-word">Word</div>
+        <div class="modal-meaning" id="m-meaning">意思</div>
+        <div class="modal-example" id="m-example">Example sentence.</div>
+        <button style="border:none; background:var(--accent); width:100%; color:white; padding:10px; font-size:1.1rem; border-radius:5px; cursor:pointer; font-weight:bold;" onclick="replayVocab()">🔊 再唸一次</button>
+    </div>
+</div>
+
+<div id="word-toast">
+    <strong id="toast-word">Word</strong>
+    <span id="toast-mean">...</span>
+</div>
+
+<div class="voice-controls" id="voice-controls" style="display:none;">
+    <select id="voiceSelect"></select>
+    <button style="background:#e74c3c; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer; font-weight:bold;" onclick="stopSpeech()">⏹ 停止</button>
+</div>
+
+<script>
+    // 全域防護
+    window.onerror = function() { return true; };
+
+    const synth = window.speechSynthesis || null;
+    let lessonData = [];
+    const STORAGE_KEY = 'smart_lesson_data_v16_1'; 
+    let currentUtterance = null;
+    let currentVocabData = null;
+    let isTeacherMode = false;
+
+    window.onload = function() {
+        try {
+            loadData();
+            if (synth) {
+                initVoices();
+                if (synth.onvoiceschanged !== undefined) {
+                    synth.onvoiceschanged = initVoices;
+                }
+            }
+        } catch(e) {
+            console.error(e);
+            forceTeacherMode();
+        }
+    };
+
+    function safeToggleMode() {
+        try {
+            isTeacherMode = !isTeacherMode;
+            updateDisplay();
+        } catch(e) {
+            forceTeacherMode();
+        }
+    }
+
+    function forceTeacherMode() {
+        isTeacherMode = true;
+        document.getElementById('teacher-zone').style.display = 'block';
+        document.getElementById('student-zone').style.display = 'none';
+        document.getElementById('voice-controls').style.display = 'none';
+    }
+
+    function updateDisplay() {
+        const tZone = document.getElementById('teacher-zone');
+        const sZone = document.getElementById('student-zone');
+        const vCtrl = document.getElementById('voice-controls');
+
+        if (isTeacherMode) {
+            tZone.style.display = 'block';
+            sZone.style.display = 'none';
+            vCtrl.style.display = 'none';
+            stopSpeech();
+            if (document.fullscreenElement) document.exitFullscreen();
+        } else {
+            tZone.style.display = 'none';
+            sZone.style.display = 'block';
+            vCtrl.style.display = 'flex';
+            renderLesson();
+        }
+    }
+
+    function resetAll() {
+        if(confirm("🚨 警告：確定要強制清除所有講義資料，並恢復出廠設定嗎？")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    function exportToPDF() {
+        if (!lessonData || lessonData.length === 0) return alert("目前沒有講義資料可供匯出喔！");
+        window.print();
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`無法切換全螢幕: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    function saveAndRender() {
+        let inputStr = document.getElementById('json-input').value.trim();
+        if(!inputStr) return alert("請先貼上資料！");
+        
+        try {
+            // 【超級洗淨器】抹除 Markdown 標記
+            inputStr = inputStr.replace(/```json/g, '').replace(/```/g, '');
+
+            const jsonMatch = inputStr.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (!jsonMatch) throw new Error("找不到陣列結構");
+            
+            // 【超級洗淨器】暴力抹平所有的換行符號、Tab，這能解決 90% 的解析失敗！
+            let cleanJson = jsonMatch[0].replace(/[\r\n\t]+/g, " ");
+
+            const data = JSON.parse(cleanJson);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            lessonData = data;
+            
+            alert("✅ 成功存檔！開始上課！");
+            isTeacherMode = false;
+            updateDisplay();
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ 解析失敗！AI 回傳的資料有嚴重的格式錯誤。\n\n💡 解決方案：\n請複製這句話貼回給 ChatGPT：「你的 JSON 格式無效，請檢查裡面是否有未跳脫的雙引號 (\")，請將對話的雙引號改為單引號 (')，並重新輸出給我。」");
+        }
+    }
+
+    function loadData() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                lessonData = JSON.parse(saved);
+                isTeacherMode = false;
+            } catch(e) {
+                isTeacherMode = true;
+            }
+        } else {
+            isTeacherMode = true;
+        }
+        updateDisplay();
+    }
+
+    function renderLesson() {
+        const container = document.getElementById('lesson-container');
+        container.innerHTML = '';
+        const toolbar = document.getElementById('toolbar');
+
+        if (!lessonData || lessonData.length === 0) {
+            toolbar.style.display = 'none';
+            container.innerHTML = '<div style="text-align:center; padding: 50px; color:#999;">尚無資料，請先備課。</div>';
+            return;
+        }
+        toolbar.style.display = 'flex';
+
+        lessonData.forEach((item) => {
+            const card = document.createElement('div');
+            card.className = 'lesson-card';
+            
+            let vocabHtml = '';
+            if (item.vocab && item.vocab.length > 0) {
+                const chips = item.vocab.map(v => {
+                    const safeWord = escapeJs(v.word);
+                    const safeMean = escapeJs(v.mean);
+                    const safeEx = escapeJs(v.ex);
+                    return `<span class="vocab-chip" onclick="openVocabModal('${safeWord}', '${safeMean}', '${safeEx}')">
+                        <b>${v.word}</b> <span>${v.mean.split('.')[0]}</span>
+                    </span>`;
+                }).join('');
+                vocabHtml = `<div class="vocab-section"><span class="section-label">單字學習 (點擊聽發音與例句)</span><div class="vocab-list">${chips}</div></div>`;
+            }
+
+            const processedEnglish = item.english.split(/([a-zA-Z0-9'-]+)/g).map(chunk => {
+                if (/[a-zA-Z0-9'-]+/.test(chunk)) {
+                    const safeChunk = escapeJs(chunk);
+                    return `<span class="word-in-text" onclick="playWordSmart(event, '${safeChunk}')">${chunk}</span>`;
+                }
+                return chunk;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="text-section" onclick="playSectionAudio(this, '${escapeJs(item.english)}')">
+                    <div class="play-icon">🔊</div>
+                    <div class="english-text">${processedEnglish}</div>
+                    <div class="chinese-trans">${item.chinese}</div>
+                </div>
+                <div class="analysis-section">
+                    <div style="font-weight:bold; color:#2980b9; margin-bottom:10px;">💡 名師解析：</div>
+                    <div class="analysis-content">${item.grammar || '無重點解說'}</div>
+                </div>
+                ${vocabHtml}
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function escapeJs(str) {
+        if(!str) return "";
+        return str.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+    }
+
+    async function playWordSmart(event, word) {
+        event.stopPropagation();
+        stopSpeech();
+
+        let localVocab = null;
+        for (let section of lessonData) {
+            if (section.vocab) {
+                const match = section.vocab.find(v => v.word.toLowerCase() === word.toLowerCase());
+                if (match) { localVocab = match; break; }
+            }
+        }
+
+        if (localVocab) {
+            openVocabModal(localVocab.word, localVocab.mean, localVocab.ex);
+        } else {
+            if (synth) {
+                setTimeout(() => {
+                    const utter = new SpeechSynthesisUtterance(word);
+                    setVoice(utter);
+                    utter.rate = 0.8;
+                    synth.speak(utter);
+                }, 150);
+            }
+            showWordToast(word);
+        }
+    }
+
+    function openVocabModal(word, mean, ex) {
+        currentVocabData = { word, ex };
+        document.getElementById('m-word').innerText = word;
+        document.getElementById('m-meaning').innerText = mean;
+        document.getElementById('m-example').innerHTML = `Example: <br><b>${ex}</b>`;
+        document.getElementById('vocab-modal').style.display = 'flex';
+        stopSpeech();
+        speakVocab(word, ex);
+    }
+
+    function closeModal(e) {
+        if(e.target.id === 'vocab-modal' || e.target.classList.contains('close-modal')) {
+            document.getElementById('vocab-modal').style.display = 'none';
+            stopSpeech();
+        }
+    }
+
+    function replayVocab() {
+        if(currentVocabData) {
+            speakVocab(currentVocabData.word, currentVocabData.ex);
+        }
+    }
+
+    function speakVocab(word, ex) {
+        if (!synth) return;
+        setTimeout(() => {
+            const u1 = new SpeechSynthesisUtterance(word);
+            setVoice(u1); u1.rate = 0.8;
+            const u2 = new SpeechSynthesisUtterance(ex);
+            setVoice(u2); u2.rate = 0.9;
+            u1.onend = () => { setTimeout(() => synth.speak(u2), 300); };
+            synth.speak(u1);
+        }, 150);
+    }
+
+    async function showWordToast(word) {
+        const toast = document.getElementById('word-toast');
+        const tWord = document.querySelector('#word-toast strong');
+        const tMean = document.querySelector('#word-toast span');
+        
+        tWord.innerText = word;
+        tMean.innerText = "查詢中...";
+        toast.classList.add('show');
+        
+        try {
+            const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh-TW`);
+            const data = await res.json();
+            if (data.responseData) {
+                tMean.innerText = data.responseData.translatedText.replace(/[!.。]/g, "");
+            } else {
+                tMean.innerText = "查無結果";
+            }
+        } catch (e) {
+            tMean.innerText = "網路錯誤";
+        }
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    function initVoices() {
+        if (!synth) return;
+        const select = document.getElementById('voiceSelect');
+        const voices = synth.getVoices();
+        if(voices.length === 0) return;
+        select.innerHTML = '';
+        let bestIdx = 0;
+        voices.forEach((v, i) => {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.text = `${v.name.substring(0, 15)}.. (${v.lang})`;
+            select.appendChild(opt);
+            if (v.lang === 'en-US' && v.name.includes('Google')) bestIdx = i;
+        });
+        select.selectedIndex = bestIdx;
+    }
+
+    function setVoice(utter) {
+        if (!synth) return;
+        const voices = synth.getVoices();
+        const select = document.getElementById('voiceSelect');
+        if (voices.length > 0) utter.voice = voices[select.value];
+    }
+
+    function playSectionAudio(element, text) {
+        stopSpeech();
+        element.classList.add('playing');
+        if (synth) {
+            setTimeout(() => {
+                const utter = new SpeechSynthesisUtterance(text);
+                setVoice(utter);
+                utter.rate = 0.9; 
+                utter.onend = () => { element.classList.remove('playing'); };
+                currentUtterance = utter;
+                synth.speak(utter);
+            }, 150);
+        } else {
+            setTimeout(() => { element.classList.remove('playing'); }, 1000);
+        }
+    }
+
+    function stopSpeech() {
+        if (synth) synth.cancel();
+        document.querySelectorAll('.text-section').forEach(el => el.classList.remove('playing'));
+    }
+</script>
+</body>
+</html>
